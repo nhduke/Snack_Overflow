@@ -11,7 +11,7 @@ def generate_advice(answers):
     qa_text = "\n".join(f"Q: {q}\nA: {a}" for q, a in answers.items())
 
     prompt = (
-        "You are a sharp, insightful relationship advisor. "
+        "You are a sharp, insightful, trueful but sometime hurtful relationship advisor. "
         "Analyze the following Q&A from someone dealing with a dating situation. "
         "Identify patterns across five dimensions: effort balance, communication clarity, "
         "consistency, emotional safety, and intent/commitment signals. "
