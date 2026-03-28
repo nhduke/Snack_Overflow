@@ -5,7 +5,7 @@ import os
 
 load_dotenv(r"D:\DEV\Snack_Overflow\guga_dating\secret.env")
 
-client = genai.Client(api_key="GEMINI_API_KEY")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 TONE_INSTRUCTIONS = {
     "honest":         "Be direct and balanced. Call out what's real without softening or sharpening.",

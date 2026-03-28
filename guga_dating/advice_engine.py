@@ -1,4 +1,3 @@
-import json
 import time
 from google import genai
 from dotenv import load_dotenv
@@ -6,7 +5,7 @@ import os
 
 load_dotenv(r"D:\DEV\Snack_Overflow\guga_dating\secret.env")
 
-client = genai.Client(api_key="GEMINI_API_KEY")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def generate_advice(answers):
     qa_text = "\n".join(f"Q: {q}\nA: {a}" for q, a in answers.items())

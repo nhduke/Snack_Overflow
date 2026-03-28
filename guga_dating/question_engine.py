@@ -6,7 +6,6 @@ import os
 
 load_dotenv(r"D:\DEV\Snack_Overflow\guga_dating\secret.env")
 
-
 QUESTION_FRAMEWORK = {
     "Texting": ["communication frequency", "who initiates", "response time", "emotional tone"],
     "Mixed Signals": ["behavioral patterns", "verbal vs. action mismatches", "hot/cold cycles"],
@@ -16,7 +15,7 @@ QUESTION_FRAMEWORK = {
 }
 
 
-client = genai.Client(api_key="GEMINI_API_KEY")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def get_questions(issue):

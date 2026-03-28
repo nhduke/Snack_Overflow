@@ -3,7 +3,6 @@ from tkinter import ttk
 from question_engine import get_questions
 from advice_engine import generate_advice
 from tone_engine import style_output
-import time
 import traceback
 import threading
 
