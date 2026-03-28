@@ -1,6 +1,10 @@
 import json
 import time
 from google import genai
+from dotenv import load_dotenv
+import os
+
+load_dotenv(r"D:\DEV\Snack_Overflow\guga_dating\secret.env")
 
 
 QUESTION_FRAMEWORK = {
@@ -11,14 +15,15 @@ QUESTION_FRAMEWORK = {
     "Situationship": ["label avoidance", "exclusivity", "future plans", "emotional investment"],
 }
 
-client = genai.Client(api_key="API")
+
+client = genai.Client(api_key="GEMINI_API_KEY")
 
 
 def get_questions(issue):
     dimensions = QUESTION_FRAMEWORK.get(issue, ["general relationship dynamics"])
 
     prompt = (
-        f"You are a relationship analyst. Generate exactly 8 short, direct, non-judgmental questions "
+        f"You are a relationship analyst. Generate exactly 3 short, direct, non-judgmental questions "
         f"for someone dealing with a '{issue}' dating issue. "
         f"Explore these dimensions: {', '.join(dimensions)}. "
         "Return ONLY a raw JSON array of strings. No markdown, no backticks, no preamble."

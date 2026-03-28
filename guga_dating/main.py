@@ -119,7 +119,6 @@ class DatingAdviceApp:
     def _fetch_advice(self, answers):
         try:
             advice = generate_advice(answers)
-            time.sleep(1)
             styled = style_output(advice, self.tone_var.get())
             self.root.after(0, self._display_advice, styled)
         except Exception as e:
