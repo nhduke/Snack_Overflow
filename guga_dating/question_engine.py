@@ -4,7 +4,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 
-load_dotenv(r"D:\DEV\Snack_Overflow\guga_dating\secret.env")
+load_dotenv(os.path.join(os.path.dirname(__file__), 'secret.env'))
 
 QUESTION_FRAMEWORK = {
     "Texting": ["communication frequency", "who initiates", "response time", "emotional tone"],

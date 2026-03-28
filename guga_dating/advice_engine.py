@@ -3,7 +3,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 
-load_dotenv(r"D:\DEV\Snack_Overflow\guga_dating\secret.env")
+load_dotenv(os.path.join(os.path.dirname(__file__), 'secret.env'))
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
