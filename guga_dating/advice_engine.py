@@ -3,7 +3,7 @@ import urllib.request
 import os
 import time
 
-GEMINI_API_KEY = "API"
+GEMINI_API_KEY = "AIzaSyAlnOVZAEhob0DIwZliXU9f_SpEkp1edSc"
 # Try this first
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
 

@@ -81,7 +81,14 @@ class DatingAdviceApp:
     def _display_questions(self, questions):
         self.start_button.config(state="normal", text="Start")
         self.result_box.delete("1.0", tk.END)
+    
+    # ADD THIS CHECK:
+        if questions is None:
+            self.result_box.insert(tk.END, "Failed to load questions. Check your API key and URL.")
+            return
+
         self.entries = {}
+    # ... rest of your code ...
 
         for q in questions:
             label = tk.Label(self.root, text=q)

@@ -1,6 +1,7 @@
 import json
-import urllib.request
-import os
+import time
+from google import genai
+
 
 QUESTION_FRAMEWORK = {
     "Texting": ["communication frequency", "who initiates", "response time", "emotional tone"],
@@ -10,60 +11,47 @@ QUESTION_FRAMEWORK = {
     "Situationship": ["label avoidance", "exclusivity", "future plans", "emotional investment"],
 }
 
-GEMINI_API_KEY = "API"
-# Try this first
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
+client = genai.Client(api_key="API")
 
-import time
 
 def get_questions(issue):
     dimensions = QUESTION_FRAMEWORK.get(issue, ["general relationship dynamics"])
+
     prompt = (
-        f"You are a relationship analyst. Generate exactly 5 short, direct, non-judgmental questions "
+        f"You are a relationship analyst. Generate exactly 8 short, direct, non-judgmental questions "
         f"for someone dealing with a '{issue}' dating issue. "
-        f"The questions should explore these dimensions: {', '.join(dimensions)}. "
-        "Return ONLY a JSON array of 5 question strings. No preamble, no markdown, no backticks."
+        f"Explore these dimensions: {', '.join(dimensions)}. "
+        "Return ONLY a raw JSON array of strings. No markdown, no backticks, no preamble."
     )
 
-    payload = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}]
-    }).encode("utf-8")
-
-    # NO req here, only inside the loop
-    def get_questions(issue):
-        print(f"DEBUG - issue received: '{issue}'")  # check what's coming in
-        
-        dimensions = QUESTION_FRAMEWORK.get(issue, ["general relationship dynamics"])
-        print(f"DEBUG - dimensions: {dimensions}")  # check dimensions
-        
-        prompt = (
-            f"You are a relationship analyst. Generate exactly 5 short, direct, non-judgmental questions "
-            f"for someone dealing with a '{issue}' dating issue. "
-            f"The questions should explore these dimensions: {', '.join(dimensions)}. "
-            "Return ONLY a JSON array of 5 question strings. No preamble, no markdown, no backticks."
-        )
-        print(f"DEBUG - prompt: {prompt}")  # check full prompt
-        print(f"DEBUG - URL: {GEMINI_URL}")  # check URL has real key not 'secret'
-
-    # rest of the code...
     for attempt in range(3):
         try:
-            req = urllib.request.Request(
-                GEMINI_URL,
-                data=payload,
-                headers={"Content-Type": "application/json"},
-                method="POST"
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
             )
-            with urllib.request.urlopen(req) as resp:
-                data = json.loads(resp.read())
-                raw = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                raw = raw.replace("```json", "").replace("```", "").strip()
-                return json.loads(raw)
-        except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < 2:
-                time.sleep(10)
+
+            raw = response.text.strip()
+
+            # Clean markdown if Gemini adds it anyway
+            raw = raw.replace("```json", "").replace("```", "").strip()
+
+            questions = json.loads(raw)
+
+            if not isinstance(questions, list):
+                raise ValueError("Response is not a JSON array")
+
+            return questions
+
+        except Exception as e:
+            if attempt < 2:
+                print(f"Error, retrying... ({e})")
+                time.sleep(2)
             else:
-                # Read the actual error message from Gemini
-                error_body = e.read().decode("utf-8")
-                print(f"HTTP {e.code} error body: {error_body}")
-                raise
+                print(f"Failed after 3 attempts: {e}")
+                return None
+
+
+# Test it out
+# questions = get_questions("Texting")
+# print(json.dumps(questions, indent=2))
