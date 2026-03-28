@@ -1,8 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 from question_engine import get_questions
-from advice_engine import analyze_dimensions
+from advice_engine import generate_advice
 from tone_engine import style_output
+import time
+import traceback
+import threading
+
 
 class DatingAdviceApp:
     def __init__(self, root):
@@ -42,12 +46,41 @@ class DatingAdviceApp:
         self.result_box.pack()
 
     def load_questions(self):
+        if not self.issue_var.get():
+            self.result_box.delete("1.0", tk.END)
+            self.result_box.insert(tk.END, "Please select an issue first.")
+            return
+
+        if not self.tone_var.get():
+            self.result_box.delete("1.0", tk.END)
+            self.result_box.insert(tk.END, "Please select a tone first.")
+            return
+
         for widget in self.question_widgets:
             widget.destroy()
         self.question_widgets.clear()
 
-        questions = get_questions(self.issue_var.get())
+        self.start_button.config(state="disabled", text="Loading...")
+        self.result_box.delete("1.0", tk.END)
+        self.result_box.insert(tk.END, "Fetching questions...")
 
+        # Run API call in background thread so UI doesn't freeze
+        thread = threading.Thread(target=self._fetch_questions)
+        thread.daemon = True
+        thread.start()
+
+    def _fetch_questions(self):
+        try:
+            questions = get_questions(self.issue_var.get())
+            # Schedule UI update back on main thread
+            self.root.after(0, self._display_questions, questions)
+        except Exception as e:
+            self.root.after(0, self._show_error, f"Error loading questions:\n{e}")
+            self.root.after(0, self.start_button.config, {"state": "normal", "text": "Start"})
+
+    def _display_questions(self, questions):
+        self.start_button.config(state="normal", text="Start")
+        self.result_box.delete("1.0", tk.END)
         self.entries = {}
 
         for q in questions:
@@ -68,13 +101,36 @@ class DatingAdviceApp:
     def process_answers(self):
         answers = {q: e.get() for q, e in self.entries.items()}
 
-        category = classify_situation(answers)
-        advice = generate_advice(category)
-        styled = style_output(advice, self.tone_var.get())
+        self.result_box.delete("1.0", tk.END)
+        self.result_box.insert(tk.END, "Generating advice...")
 
+        # Run API calls in background thread
+        thread = threading.Thread(target=self._fetch_advice, args=(answers,))
+        thread.daemon = True
+        thread.start()
+
+    def _fetch_advice(self, answers):
+        try:
+            advice = generate_advice(answers)
+            time.sleep(1)
+            styled = style_output(advice, self.tone_var.get())
+            self.root.after(0, self._display_advice, styled)
+        except Exception as e:
+            self.root.after(0, self._show_error, f"Error generating advice:\n{e}")
+
+    def _display_advice(self, styled):
         self.result_box.delete("1.0", tk.END)
         self.result_box.insert(tk.END, styled)
 
-root = tk.Tk()
-app = DatingAdviceApp(root)
-root.mainloop()
+    def _show_error(self, message):
+        self.result_box.delete("1.0", tk.END)
+        self.result_box.insert(tk.END, message)
+
+
+try:
+    root = tk.Tk()
+    app = DatingAdviceApp(root)
+    root.mainloop()
+except Exception as e:
+    traceback.print_exc()
+    input("Press Enter to exit...")

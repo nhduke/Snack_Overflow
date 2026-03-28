@@ -1,105 +1,45 @@
+import json
+import urllib.request
+import os
+import time
+
+GEMINI_API_KEY = "API"
+# Try this first
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
+
 def analyze_dimensions(answers):
+    return answers
 
-    combined = " ".join(answers.values()).lower()
+def generate_advice(answers):
+    qa_text = "\n".join(f"Q: {q}\nA: {a}" for q, a in answers.items())
 
-    scores = {
-        "effort": 0,
-        "clarity": 0,
-        "consistency": 0,
-        "emotional_safety": 0,
-        "intent": 0
-    }
+    prompt = (
+        "You are a sharp, insightful relationship advisor. "
+        "Analyze the following Q&A from someone dealing with a dating situation. "
+        "Identify patterns across five dimensions: effort balance, communication clarity, "
+        "consistency, emotional safety, and intent/commitment signals. "
+        "Give 3-5 sentences of concrete, specific advice based only on what they shared. "
+        "Do not be vague. Do not moralize. Speak directly to their situation.\n\n"
+        f"{qa_text}"
+    )
 
-    # Effort
-    if "i text first" in combined or "always me" in combined:
-        scores["effort"] -= 2
+    payload = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}]
+    }).encode("utf-8")
 
-    if "they start conversation" in combined:
-        scores["effort"] += 2
-
-    # Clarity
-    if "unclear" in combined or "mixed" in combined:
-        scores["clarity"] -= 2
-
-    if "clear" in combined or "direct" in combined:
-        scores["clarity"] += 2
-
-    # Consistency
-    if "sometimes" in combined or "random" in combined:
-        scores["consistency"] -= 2
-
-    if "consistent" in combined:
-        scores["consistency"] += 2
-
-    # Emotional safety
-    if "afraid" in combined or "cannot talk" in combined:
-        scores["emotional_safety"] -= 2
-
-    if "comfortable" in combined:
-        scores["emotional_safety"] += 2
-
-    # Intent
-    if "avoid plans" in combined:
-        scores["intent"] -= 2
-
-    if "future plans" in combined:
-        scores["intent"] += 2
-
-    return scores
-
-
-def generate_advice(scores):
-
-    advice_parts = []
-
-    # Effort
-    if scores["effort"] < 0:
-        advice_parts.append(
-            "The effort currently looks uneven. One person appears to be carrying more of the interaction."
-        )
-
-    elif scores["effort"] > 0:
-        advice_parts.append(
-            "There appears to be mutual effort in maintaining contact."
-        )
-
-    # Clarity
-    if scores["clarity"] < 0:
-        advice_parts.append(
-            "The communication pattern suggests uncertainty or mixed signaling."
-        )
-
-    elif scores["clarity"] > 0:
-        advice_parts.append(
-            "The communication seems relatively direct."
-        )
-
-    # Consistency
-    if scores["consistency"] < 0:
-        advice_parts.append(
-            "Inconsistency often creates emotional confusion because positive moments become difficult to interpret."
-        )
-
-    # Emotional Safety
-    if scores["emotional_safety"] < 0:
-        advice_parts.append(
-            "If speaking honestly feels risky, that usually weakens trust over time."
-        )
-
-    # Intent
-    if scores["intent"] < 0:
-        advice_parts.append(
-            "Avoiding concrete plans often signals uncertainty about commitment."
-        )
-
-    elif scores["intent"] > 0:
-        advice_parts.append(
-            "Future-oriented behavior usually indicates stronger relational intent."
-        )
-
-    if not advice_parts:
-        advice_parts.append(
-            "The situation has mixed signals and needs more concrete examples."
-        )
-
-    return " ".join(advice_parts)
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                GEMINI_URL,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read())
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 2:
+                time.sleep(10)
+            else:
+                raise

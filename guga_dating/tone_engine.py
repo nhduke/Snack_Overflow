@@ -1,31 +1,43 @@
+import json
+import urllib.request
+import os
+
+GEMINI_API_KEY = "API"
+# Try this first
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
+TONE_INSTRUCTIONS = {
+    "honest":         "Be direct and balanced. Call out what's real without softening or sharpening.",
+    "brutal":         "Be blunt and unsparing. No comfort, no softening. Say what most people wouldn't.",
+    "calm":           "Be measured and gentle. Use neutral language. Avoid charged words.",
+    "slightly_toxic": "Be sardonic and a little cutting. Point out the uncomfortable irony in the situation.",
+}
+
 def style_output(advice, tone):
+    instruction = TONE_INSTRUCTIONS.get(tone, TONE_INSTRUCTIONS["honest"])
 
-    tones = {
-        "honest": advice,
+    prompt = (
+        f"Rewrite the following relationship advice in this tone: {instruction}\n"
+        "Keep the same core meaning and length. Return only the rewritten advice, no preamble.\n\n"
+        f"Advice:\n{advice}"
+    )
 
-        "brutal": {
-            "You are carrying most of the interaction right now.": "You are doing the work and calling it chemistry.",
-            "Their response pattern suggests you are not their current priority.": "If they wanted stronger presence, you would not feel this confused.",
-            "Repeated unresolved conflict usually points to deeper incompatibility.": "Same fight, different day usually means the problem is structural.",
-            "Look at repeated behavior more than isolated words.": "Patterns do not lie."
-        },
+    payload = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}]
+    }).encode("utf-8")
 
-        "calm": {
-            "You are carrying most of the interaction right now.": "The effort currently appears uneven.",
-            "Their response pattern suggests you are not their current priority.": "Their current engagement level appears limited.",
-            "Repeated unresolved conflict usually points to deeper incompatibility.": "The conflict pattern suggests unresolved differences.",
-            "Look at repeated behavior more than isolated words.": "Long-term patterns matter most."
-        },
-
-        "slightly_toxic": {
-            "You are carrying most of the interaction right now.": "You are sending energy where little is returning.",
-            "Their response pattern suggests you are not their current priority.": "Confusion usually arrives when clarity is absent.",
-            "Repeated unresolved conflict usually points to deeper incompatibility.": "Peace should not require constant repair.",
-            "Look at repeated behavior more than isolated words.": "Potential is not reality."
-        }
-    }
-
-    if tone == "honest":
-        return advice
-
-    return tones.get(tone, {}).get(advice, advice)
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                GEMINI_URL,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read())
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 2:
+                time.sleep(10)
+            else:
+                raise
